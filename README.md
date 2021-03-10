@@ -1,6 +1,6 @@
 # lil-reddit-clone
 
-Este projeto é um pequeno clone da famosa plataforma Reddit, com os principais recursos do site: CRUD, fazer um post, curtit/comentar.
+Este projeto é um pequeno clone da famosa plataforma Reddit, com os principais recursos do site: CRUD, fazer um post, curtir/comentar.
 
 Todo o projeto está sendo feito em TypeScript. O frontend é em Next.js utilizando também o ChakraUI. Já o backend é em Node.js utilizando express, MikroORM, PostgreSQL, GraphQL, ApolloServer e urql.
 
