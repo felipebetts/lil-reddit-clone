@@ -1,28 +1,36 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { Field, Int, ObjectType } from "type-graphql";
+import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Post } from "./Post";
 
-// Nesse arquivo estamos definindo uma table no nosso banco relacional usando o Mikro-ORM.
+// Nesse arquivo estamos definindo uma table no nosso banco relacional usando o TypeORM.
 // A tabela se chamará Post e terá as colunas id, createdAt, updatedAt, title, definidas abaixo
 
 @ObjectType()
 @Entity()
-export class User {
+export class User extends BaseEntity {
     @Field(() => Int)
-    @PrimaryKey()
+    @PrimaryGeneratedColumn()
     id!: number;
     
     @Field(() => String)
-    @Property({ type: 'date' })
-    createdAt = new Date();
-    
-    @Field(() => String)
-    @Property({ type: 'date', onUpdate: () => new Date() })
-    updatedAt = new Date();
-    
-    @Field(() => String)
-    @Property({ type: 'text', unique: true })
+    @Column({ unique: true })
     username!: string;
 
-    @Property({ type: 'text' })
+    @Field(() => String)
+    @Column({ unique: true })
+    email!: string;
+
+    @Column()
     password!: string;
+
+    @OneToMany(() => Post, post => post.creator)
+    posts: Post[] // array de posts
+
+    @Field(() => String)
+    @CreateDateColumn()
+    createdAt: Date;
+    
+    @Field(() => String)
+    @UpdateDateColumn()
+    updatedAt: Date;
 }

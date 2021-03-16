@@ -1,8 +1,9 @@
 import { Box, Flex, Link } from '@chakra-ui/layout';
 import React from 'react'
 import NextLink from "next/link";
-import { useMeQuery } from '../generated/graphql'
+import { useLogoutMutation, useMeQuery } from '../generated/graphql'
 import { Button } from '@chakra-ui/button';
+import { isServer } from '../utils/isServer';
 
 interface NavbarProps {
 
@@ -10,7 +11,10 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({}) => {
 
-    const [{data, fetching}] = useMeQuery()
+    const [{ fetching: logoutFetching }, logout] = useLogoutMutation() // aqui estamos extraindo o fetching como logoutFetching, para evitar conflitos de nome de variaveis
+    const [{data, fetching}] = useMeQuery({
+        pause: isServer() // com isso nós retiramos o ssr do mequery
+    })
     
     let body
 
@@ -31,13 +35,19 @@ export const Navbar: React.FC<NavbarProps> = ({}) => {
         body = (
             <Flex>
                 <Box mr={3}>{data.me.username}</Box>
-                <Button variant="link">logout</Button>
+                <Button 
+                    variant="link"
+                    onClick={() => logout()}
+                    isLoading={logoutFetching}
+                >
+                    logout
+                </Button>
             </Flex>
         )
     }
 
     return (
-        <Flex bg="tan" p={4} >
+        <Flex zIndex={1} position="sticky" top={0} bg="tan" p={4} >
             <Box ml="auto">{body}</Box>
         </Flex>
     );

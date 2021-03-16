@@ -1,11 +1,16 @@
 import React from 'react'
 import { Form, Formik } from 'formik'
-import { Box, Button } from '@chakra-ui/react';
+import { Box, Button, Flex, Link } from '@chakra-ui/react';
 import { Wrapper } from '../components/Wrapper';
 import InputField from '../components/InputField';
 import { useLoginMutation } from '../generated/graphql';
 import { toErrorMap } from '../utils/toErrorMap';
 import { useRouter } from 'next/router'
+import { withUrqlClient } from 'next-urql';
+import { createUrqlClient } from '../utils/createUrqlClient'; 
+import NextLink from "next/link"
+// import argon2 from "argon2"
+
 
 interface registerProps {}
 
@@ -37,15 +42,21 @@ const Login: React.FC<registerProps> = ({}) => {
     return (
         <Wrapper variant="small">
             <Formik 
-                initialValues={{ username: "", password: "" }}
+                initialValues={{ usernameOrEmail: "", password: "" }}
                 onSubmit={async (values, { setErrors }) => {
-                    const response = await login({ options: values })
+                    // const hashedPassword = await argon2.hash(values.password) // essa funcao do argon2 retorna a senha encriptografada
+                    // values.password = hashedPassword
+                    const response = await login(values)
                     // console.log(await response)
                     if (response.data?.login.errors) {
                         setErrors(toErrorMap(response.data.login.errors)) // isso irá trazer a mensagem de erro enviada pelo servidor
                     } else if (response.data?.login.user) {
                         // login funcionou!
-                        router.push("/") // essa linha manda a url para a origem ( '/' )
+                        if (typeof router.query.next === "string") {
+                            router.push(router.query.next)
+                        } else {
+                            router.push("/") // essa linha manda a url para a origem ( '/' )
+                        }
                     }
 
                     // se a chave dos values for diferente da chave passada na mutation, o register terá que ser chamdo da seguinte forma:
@@ -55,9 +66,9 @@ const Login: React.FC<registerProps> = ({}) => {
                 {({ isSubmitting }) => (
                     <Form>
                         <InputField 
-                            name="username" 
-                            placeholder="username" 
-                            label="Username" 
+                            name="usernameOrEmail" 
+                            placeholder="username or email" 
+                            label="Username or Email" 
                         />
                         <Box mt={4}>
                             <InputField 
@@ -67,6 +78,11 @@ const Login: React.FC<registerProps> = ({}) => {
                                 type="password"
                             />
                         </Box>
+                        <Flex mt={2}>
+                            <NextLink href="/forgot-password">
+                                <Link ml="auto">Esqueceu sua senha?</Link>
+                            </NextLink>
+                        </Flex>
                         <Button 
                             mt={4} 
                             type="submit" 
@@ -83,4 +99,5 @@ const Login: React.FC<registerProps> = ({}) => {
     );
 }
 
-export default Login
+// precisamos envolver a pagina de login no urql client para podermos acessar as funcoes do graphql
+export default withUrqlClient(createUrqlClient)(Login)

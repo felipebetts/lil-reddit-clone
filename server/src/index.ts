@@ -1,28 +1,39 @@
 import "reflect-metadata"
 import { PostResolver } from './resolvers/post';
 import { HelloResolver } from './resolvers/hello';
+import { UserResolver } from "./resolvers/user";
 // import { Post } from './entities/Post';
-import { __prod__ } from './constants';
-import { MikroORM } from "@mikro-orm/core";
-import microConfig from './mikro-orm.config'
+import { COOKIE_NAME, __prod__ } from './constants';
 import express from 'express'
 import { ApolloServer } from 'apollo-server-express'
 import { buildSchema } from 'type-graphql'
-import { UserResolver } from "./resolvers/user";
-import redis from 'redis';
+import Redis from 'ioredis';
 import session from 'express-session';
 import connectRedis from 'connect-redis'
 import cors from 'cors'
+import { createConnection } from 'typeorm'
+import { Post } from "./entities/Post";
+import { User } from "./entities/User";
+
+// import { User } from "./entities/User";
+// await orm.em.nativeDelete(User, { username: "beto" }) // deleta todos os usuátios do banco de dados
 
 
 const main = async () => {
-    const orm = await MikroORM.init(microConfig); // configuramos a tabela
-    await orm.getMigrator().up(); // migramos a tabela para postgres
+    const conn = createConnection({
+        type: 'postgres',
+        database: 'lireddit2',
+        username: 'postgres',
+        password: '1237Trinta',
+        logging: true,
+        synchronize: true,
+        entities: [Post, User]
+    })
 
     const app = express()
 
     const RedisStore = connectRedis(session)
-    const redisClient = redis.createClient()
+    const redis = new Redis()
 
     app.use(cors({
         origin: "http://localhost:3000",
@@ -32,9 +43,9 @@ const main = async () => {
     // a midleware session abaixo precisa ser colocada ANTES da middleware do apolloServer, pois o apollo utilizará os dados de session
     app.use(
         session({
-            name: 'qid',
+            name: COOKIE_NAME,
             store: new RedisStore({ 
-                client: redisClient,
+                client: redis,
                 disableTouch: true, // essa linha desabilita a checagem automatica de tempo de sessao, ou seja, a sessao ficará aberta para sempre
             }),
             // abaixo vamos definir as configuracoes do cookie que será gerado:
@@ -56,7 +67,7 @@ const main = async () => {
             resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
-        context: ({ req, res }) => ({ em: orm.em, req, res }) // context é um objeto que estará disponível para todos os resolvers
+        context: ({ req, res }) => ({ req, res, redis }) // context é um objeto que estará disponível para todos os resolvers
     })
 
     // o apollo pode aplicar o cors para a rota em que ele está configurado 

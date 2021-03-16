@@ -1,0 +1,11 @@
+SSR = Server Side Rendering
+
+Quando o SSR é utilizado, a página é renderizada no servidor, que retorna um arquivo html estático pronto.
+
+No caso desta aplicação, funciona assim: 
+
+    1 - eu faco um request ao entrar no site pelo browser no endereço http://localhost:3000
+    2 - o browser faz um request para o servidor do nextjs para obter a pagina
+    3 - o servidor do nextjs faz um request para o servidor graphql no endereço http://localhost:4000
+    4 - o servidor do graphql faz o build do html pronto e envia de volta por todo esse caminho até o browser
+    5 - o browser exibe logo de cara o html completo da página, já com os dados dinâmicos incluídos nele, de forma estática

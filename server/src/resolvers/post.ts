@@ -1,7 +1,20 @@
-import { MyContext } from './../types';
+import { isAuth } from './../middleware/isAuth';
 import { Post } from './../entities/Post';
 // Nesse arquivo vamos configurar o GraphQL
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from 'type-graphql'
+import { Arg, Ctx, Field, InputType, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql'
+import { MyContext } from 'src/types';
+import { getConnection } from 'typeorm';
+
+
+@InputType()
+class PostInput {
+    @Field()
+    title: string
+    
+    @Field()
+    text: string
+}
+
 
 @Resolver() // resolver é um class decorator para indicar que a classe será um schema type-graphQL
 export class PostResolver {
@@ -10,30 +23,46 @@ export class PostResolver {
     // modelo de type-graphQL query simples:
     // a query abaixo busca todos os posts da database
     @Query(() => [Post]) // precisamos definir o tipo
-    posts(
-        @Ctx() ctx: MyContext // aqui o MyContext definirá o tipo da response do query (vamos importá-lo do arquivo types.ts)
+    async posts(
+        @Arg('limit', () => Int) limit: number,
+        @Arg('cursor', () => String, { nullable: true }) cursor: string | null, // será a data de criação do post
     ) : Promise<Post[]> {
-        return ctx.em.find(Post, {})
+
+        const realLimit = Math.min(50, limit)
+
+        const myQueryBuilder = getConnection()
+            .getRepository(Post)
+            .createQueryBuilder("p") // p é um apelido para posts
+            // .where('"createdAt" > :cursor', { cursor: parseInt(cursor) })
+            .orderBy('"createdAt"', "DESC")
+            .take(realLimit)
+            
+        if(cursor) {
+            myQueryBuilder.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) })
+        }
+
+        return myQueryBuilder.getMany()
     }
 
     // A proxima query seleciona apenas um post de acordo com o seu id:
     @Query(() => Post, { nullable: true }) // precisamos definir o tipo do retorno
     post(
         @Arg('id' ,() => Int) id: number,
-        @Ctx() ctx: MyContext 
-    ) : Promise<Post | null> { // em typescript | equivale ao || do javascript
-        return ctx.em.findOne(Post, { id })
+    ) : Promise<Post | undefined> { // em typescript | equivale ao || do javascript
+        return Post.findOne(id)
     }
 
     // A mutation abaixo cria um novo post e o insere na tabela do banco de dados
     @Mutation(() => Post) 
+    @UseMiddleware(isAuth)
     async createPost(
-        @Arg('title') title: string,
-        @Ctx() ctx: MyContext 
+        @Arg('input') input: PostInput,
+        @Ctx() { req }: MyContext,
     ) : Promise<Post> { 
-        const post = ctx.em.create(Post, { title })
-        await ctx.em.persistAndFlush(post)
-        return post
+        return Post.create({
+            ...input,
+            creatorId: req.session.userId,
+        }).save()
     }
 
 
@@ -42,15 +71,13 @@ export class PostResolver {
     async updatePost(
         @Arg('id') id: number,
         @Arg('title', () => String, { nullable: true }) title: string,
-        @Ctx() ctx: MyContext 
     ) : Promise<Post> { 
-        const post = await ctx.em.findOne(Post, { id })
+        const post = await Post.findOne(id)
         if (!post) {
             return null
         }
         if (typeof title !== 'undefined') {
-            post.title = title;
-            await ctx.em.persistAndFlush(post) 
+            await Post.update({ id }, { title })
         }
         return post
     }
@@ -60,10 +87,9 @@ export class PostResolver {
     @Mutation(() => Boolean) 
     async deletePost(
         @Arg('id') id: number,
-        @Ctx() ctx: MyContext 
     ) : Promise<Post> { 
         try {
-            await ctx.em.nativeDelete(Post, { id })
+            await Post.delete(id)
         } catch {
             return false
         }
