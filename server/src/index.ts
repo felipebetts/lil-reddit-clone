@@ -14,21 +14,27 @@ import cors from 'cors'
 import { createConnection } from 'typeorm'
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
+import path from 'path'
 
 // import { User } from "./entities/User";
 // await orm.em.nativeDelete(User, { username: "beto" }) // deleta todos os usuátios do banco de dados
 
 
 const main = async () => {
-    const conn = createConnection({
+    const conn = await createConnection({
         type: 'postgres',
         database: 'lireddit2',
         username: 'postgres',
         password: '1237Trinta',
         logging: true,
         synchronize: true,
+        migrations: [path.join(__dirname, './migrations/*')],
         entities: [Post, User]
     })
+
+    await conn.runMigrations()
+
+    // await Post.delete({})
 
     const app = express()
 
