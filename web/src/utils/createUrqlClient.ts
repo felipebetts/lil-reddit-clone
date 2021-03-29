@@ -24,22 +24,18 @@ const cursorPagination = (): Resolver => {
   return (_parent, fieldArgs, cache, info) => {
     const { parentKey: entityKey, fieldName } = info;
     const allFields = cache.inspectFields(entityKey);
-    console.log('allFields: ', allFields)
     const fieldInfos = allFields.filter(info => info.fieldName === fieldName);
     const size = fieldInfos.length;
     if (size === 0) {
       return undefined;
     }
-    console.log('fieldArgs: ', fieldArgs)
 
     const fieldKey = `${fieldName}(${stringifyVariables(fieldArgs)})`
-    console.log('key criada por mim: ', fieldKey)
 
     const isItInTheCache = cache.resolve(
       cache.resolveFieldByKey(entityKey, fieldKey) as string,
       "posts"
     )
-    console.log('isItInTheCache: ', isItInTheCache)
 
     info.partial = !isItInTheCache // assim o urql irá realizar a query para adquirir o resto dos posts
     let hasMore = true
@@ -134,6 +130,19 @@ export const createUrqlClient = (ssrExchange: any) => ({
       },
       updates: {
         Mutation: {
+          createPost: (_result, args, cache, info) => {
+
+            const allFields = cache.inspectFields('Query')
+            const fieldInfos = allFields.filter((info) => info.fieldName === 'posts')
+            fieldInfos.forEach((fi) => {
+              cache.invalidate("Query", 'posts', fi.arguments || {})
+            })
+
+            // vamos invalidar o post recem feito para ele ser buscado novamente, assim atualizando a home page
+            cache.invalidate('Query', 'posts', {
+              limit: 15
+            })
+          },
           logout: (_result, args, cache, info) => {
             betterUpdateQuery<LogoutMutation, MeQuery>(
               cache,

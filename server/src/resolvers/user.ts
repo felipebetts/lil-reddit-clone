@@ -4,7 +4,7 @@ import { validateRegister } from './../utils/validateRegister';
 // import "reflect-metadata"
 import { User } from "../entities/User"
 import { MyContext } from "../types"
-import { Arg, Ctx, Field, Mutation, ObjectType, Query, Resolver } from 'type-graphql'
+import { Arg, Ctx, Field, FieldResolver Mutation, ObjectType, Query, Resolver, Root } from 'type-graphql'
 import argon2 from "argon2"
 import { COOKIE_NAME } from "../constants"
 import { UsernamePasswordInput } from "./UsernamePasswordInput"
@@ -34,8 +34,23 @@ class UserResponse {
     user?: User
 }
 
-@Resolver() // resolver é um class decorator para indicar que a classe será um schema graphQL
+@Resolver(User) // resolver é um class decorator para indicar que a classe será um schema graphQL
 export class UserResolver {
+
+    @FieldResolver(() => String)
+    email(
+        @Root() user: User,
+        @Ctx() { req }: MyContext
+    ) {
+
+        if (req.session.userId === user.id) {
+            // se o usuário for o dono do post, entao ele pode ver o seu proprio email:
+            return user.email
+        }
+
+        // usuário nao pode ver o email:
+        return ""
+    }
 
     @Mutation(() => UserResponse)
     async changePassword(
@@ -170,7 +185,7 @@ export class UserResolver {
                 })
                 .returning("*")
                 .execute()
-            console.log('result:', result)
+            // console.log('result:', result)
             user = result.raw[0];
         } catch(err) {
             if(err.code === '23505') {

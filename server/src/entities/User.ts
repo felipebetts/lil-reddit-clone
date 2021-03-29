@@ -1,6 +1,7 @@
 import { Field, Int, ObjectType } from "type-graphql";
 import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Post } from "./Post";
+import { Updoot } from "./Updoot";
 
 // Nesse arquivo estamos definindo uma table no nosso banco relacional usando o TypeORM.
 // A tabela se chamará Post e terá as colunas id, createdAt, updatedAt, title, definidas abaixo
@@ -25,6 +26,9 @@ export class User extends BaseEntity {
 
     @OneToMany(() => Post, post => post.creator)
     posts: Post[] // array de posts
+    
+    @OneToMany(() => Updoot, post => post.postId)
+    updoots: Updoot[] // array de posts
 
     @Field(() => String)
     @CreateDateColumn()

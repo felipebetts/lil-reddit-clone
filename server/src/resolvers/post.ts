@@ -2,8 +2,9 @@ import { isAuth } from './../middleware/isAuth';
 import { Post } from './../entities/Post';
 // Nesse arquivo vamos configurar o GraphQL
 import { Arg, Ctx, Field, FieldResolver, InputType, Int, Mutation, ObjectType, Query, Resolver, Root, UseMiddleware } from 'type-graphql'
-import { MyContext } from 'src/types';
+import { MyContext } from '../types';
 import { getConnection } from 'typeorm';
+import { Updoot } from './../entities/Updoot';
 
 
 @InputType()
@@ -31,6 +32,39 @@ export class PostResolver {
     textSnippet(@Root() root: Post) {
         return root.text.slice(0, 50)
     }
+
+    @Mutation(() => Boolean)
+    async vote(
+        @Arg('postId', () => Int) postId: number,
+        @Arg('value', () => Int) value: number,
+        @Ctx() { req }: MyContext
+    ) {
+        
+        const isUpdoot = value !== -1  
+        const realValue = isUpdoot ? 1 : -1
+        const { userId } = req.session
+
+        // await Updoot.insert({
+        //     userId,
+        //     postId,
+        //     value: realValue
+        // })
+
+        await getConnection().query(`
+        START TRANSACTION;
+
+        insert into updoot ("userId", "postId", value)
+        values (${userId}, ${postId}, ${realValue});
+        
+        update post
+        set points = points + ${realValue}
+        where id = ${postId};
+
+        COMMIT;
+        `)
+        return true
+    }
+
     
     // modelo de type-graphQL query simples:
     // a query abaixo busca todos os posts da database
@@ -43,18 +77,44 @@ export class PostResolver {
         const realLimit = Math.min(50, limit)
         const realLimitPlusOne = realLimit + 1
 
-        const myQueryBuilder = getConnection()
-            .getRepository(Post)
-            .createQueryBuilder("p") // p é um apelido para posts
-            // .where('"createdAt" > :cursor', { cursor: parseInt(cursor) })
-            .orderBy('"createdAt"', "DESC")
-            .take(realLimitPlusOne)
-            
-        if(cursor) {
-            myQueryBuilder.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) })
+        const replacements: any[] = [realLimitPlusOne]
+
+        if (cursor) {
+            replacements.push(new Date(parseInt(cursor)))
         }
 
-        const posts = await myQueryBuilder.getMany()
+        // dentro da funcao abaixo é onde colocamos sql personalizado para ser executado
+        const posts = await getConnection().query(` 
+        select p.*, 
+        json_build_object(
+            'id', u.id,
+            'username', u.username,
+            'email', u.email
+            ) creator
+        from post p
+        inner join public.user u on u.id = p."creatorId"
+        ${ cursor ? `where p."createdAt" < $2`: "" /* o $1 aponta para o array que vamos declarar apos a query */}
+        order by p."createdAt" DESC
+        limit $1
+        `, replacements)
+        
+        // const myQueryBuilder = getConnection()
+        //     .getRepository(Post)
+        //     .createQueryBuilder("p") // p é um apelido para posts
+        //     .innerJoinAndSelect(
+        //         "p.creator",
+        //         "u", // u é para user
+        //         'u.id = p."creatorId"' // join o user cujo id seja igual ao creatorId
+        //         // obs: como creatorId está em camelCase, precisamos colocar com aspas duplas envolta para ser interpretado corretamente
+        //     )
+        //     .orderBy('p."createdAt"', "DESC")
+        //     .take(realLimitPlusOne)
+            
+        // if(cursor) {
+        //     myQueryBuilder.where('p."createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) })
+        // }
+
+        // const posts = await myQueryBuilder.getMany()
 
         return {
             posts: posts.slice(0, realLimit),

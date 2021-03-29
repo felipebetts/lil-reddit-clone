@@ -15,6 +15,7 @@ import { createConnection } from 'typeorm'
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
 import path from 'path'
+import { Updoot } from "./entities/Updoot";
 
 // import { User } from "./entities/User";
 // await orm.em.nativeDelete(User, { username: "beto" }) // deleta todos os usuátios do banco de dados
@@ -29,7 +30,7 @@ const main = async () => {
         logging: true,
         synchronize: true,
         migrations: [path.join(__dirname, './migrations/*')],
-        entities: [Post, User]
+        entities: [Post, User, Updoot]
     })
 
     await conn.runMigrations()

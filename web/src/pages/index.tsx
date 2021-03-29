@@ -5,18 +5,19 @@ import { Layout } from "../components/Layout"
 import NextLink from 'next/link'
 import React, { useState } from "react"
 import { Link, Stack, Box, Heading, Text, Flex, Button } from "@chakra-ui/react"
+import { UpdootSection } from "../components/UpdootSection"
 
 
 const Index = () => {
 
   const [variables, setVariables] = useState({
-    limit: 10,
+    limit: 15,
     cursor: null as null | string,
   })
 
   const [{ data, fetching }] = usePostsQuery({ // em data serão armazenados todos os posts do site
     variables,
-  }) 
+  })
 
   if(!fetching && !data) {
     // se nós nao estamos baixando os dados(fetching) e também não temos os dados ainda, então ocorreu algum erro
@@ -40,13 +41,16 @@ const Index = () => {
       ) : (
         <Stack spacing={8}>
             {data!.posts.posts.map(post => (
-              <Box key={post.id} p={5} shadow="md" borderWidth="1px">
-                <Flex>
+              <Flex key={post.id} p={5} shadow="md" borderWidth="1px">
+                <UpdootSection post={post} />
+                <Flex
+                  direction="column"
+                >
                   <Heading fontSize="xl">{post.title}</Heading>
-                  <Box ml="auto">{post.creatorId}</Box>
+                  <Text fontSize={'0.9rem'}>por {post.creator.username}</Text>
+                  <Text mt={4}>{post.textSnippet}</Text>
                 </Flex>
-                <Text mt={4}>{post.textSnippet}</Text>
-              </Box>
+              </Flex>
             ))}
         </Stack>
       )}
