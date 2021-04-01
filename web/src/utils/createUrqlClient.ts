@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import { VoteMutationVariables } from './../generated/graphql';
+import { DeletePostMutationVariables, VoteMutationVariables } from './../generated/graphql';
 // Nesse arquivo vamos criar o cliente urql
 // esse cliente nos dará também a habilidade de realizar Server Side Rendering(SSR)
 
@@ -142,6 +142,12 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
       },
       updates: {
         Mutation: {
+          deletePost: (_result, args, cache, info) => {
+            cache.invalidate({
+              __typename: "Post",
+              id: (args as DeletePostMutationVariables).id
+            })
+          },
           vote: (_result, args, cache, info) => {
             const { postId, value } = args as VoteMutationVariables
             

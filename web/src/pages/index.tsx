@@ -35,7 +35,7 @@ const Index = () => {
         <div>loading ...</div>
       ) : (
         <Stack spacing={8}>
-            {data!.posts.posts.map(post => (
+            {data!.posts.posts.map(post => !post ? null : (
               <Flex key={post.id} p={5} shadow="md" borderWidth="1px">
                 <UpdootSection post={post} />
                 <Flex
