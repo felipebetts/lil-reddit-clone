@@ -34,6 +34,7 @@ export class PostResolver {
     }
 
     @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
     async vote(
         @Arg('postId', () => Int) postId: number,
         @Arg('value', () => Int) value: number,
@@ -44,24 +45,44 @@ export class PostResolver {
         const realValue = isUpdoot ? 1 : -1
         const { userId } = req.session
 
-        // await Updoot.insert({
-        //     userId,
-        //     postId,
-        //     value: realValue
-        // })
+        const updoot = await Updoot.findOne({ where: { postId, userId }})
 
-        await getConnection().query(`
-        START TRANSACTION;
+        if (updoot && updoot.value !== realValue) {
+            // se o usuário já tiver dado updoot(like) no post,
+            // e estão alterando o valor do updoot ( de +1 para -1 ou ao contrario)
 
-        insert into updoot ("userId", "postId", value)
-        values (${userId}, ${postId}, ${realValue});
-        
-        update post
-        set points = points + ${realValue}
-        where id = ${postId};
+            await getConnection().transaction(async tm => {
+                
+                // altera o valor do updoot
+                await tm.query(`
+                    update updoot
+                    set value = $1
+                    where "postId" = $2 and "userId" = $3
+                `, [realValue, postId, userId])
+                
+                // atualiza os pontos(updoots) do post
+                await tm.query(`
+                    update post
+                    set points = points + $1
+                    where id = $2
+                `, [2 * realValue, postId])
+                // acima é 2*realValue pq além de tirarmos o voto original, adicionamos um novo no sentido oposto
+            })
+        } else if (!updoot) {
+            // usuário nunca votou antes nesse post
+            await getConnection().transaction(async tm => { // tm é uma referencia para transaction manager object
+                await tm.query(`
+                    insert into updoot ("userId", "postId", value)
+                    values ($1, $2, $3);
+                `, [userId, postId, realValue])
 
-        COMMIT;
-        `)
+                await tm.query(`
+                    update post
+                    set points = points + $1
+                    where id = $2
+                `, [realValue, postId])
+            })
+        }
         return true
     }
 
@@ -72,6 +93,7 @@ export class PostResolver {
     async posts(
         @Arg('limit', () => Int) limit: number,
         @Arg('cursor', () => String, { nullable: true }) cursor: string | null, // será a data de criação do post
+        @Ctx() { req }: MyContext
     ) : Promise<PaginatedPosts> {
 
         const realLimit = Math.min(50, limit)
@@ -79,8 +101,15 @@ export class PostResolver {
 
         const replacements: any[] = [realLimitPlusOne]
 
+        if (req.session.userId) {
+            replacements.push(req.session.userId)
+        }
+
+        let cursorIndex = 3
+
         if (cursor) {
             replacements.push(new Date(parseInt(cursor)))
+            cursorIndex = replacements.length
         }
 
         // dentro da funcao abaixo é onde colocamos sql personalizado para ser executado
@@ -90,10 +119,11 @@ export class PostResolver {
             'id', u.id,
             'username', u.username,
             'email', u.email
-            ) creator
+            ) creator,
+        ${req.session.userId ? '(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"' : 'null as "voteStatus"'}
         from post p
         inner join public.user u on u.id = p."creatorId"
-        ${ cursor ? `where p."createdAt" < $2`: "" /* o $1 aponta para o array que vamos declarar apos a query */}
+        ${ cursor ? `where p."createdAt" < $${cursorIndex}`: "" /* o $1 aponta para o array que vamos declarar apos a query */}
         order by p."createdAt" DESC
         limit $1
         `, replacements)
@@ -127,7 +157,7 @@ export class PostResolver {
     post(
         @Arg('id' ,() => Int) id: number,
     ) : Promise<Post | undefined> { // em typescript | equivale ao || do javascript
-        return Post.findOne(id)
+        return Post.findOne(id, { relations: ["creator"] })
     }
 
     // A mutation abaixo cria um novo post e o insere na tabela do banco de dados
@@ -162,13 +192,17 @@ export class PostResolver {
 
 
     // A mutation abaixo deleta um novo post e o deleta na tabela do banco de dados
-    @Mutation(() => Boolean) 
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
     async deletePost(
-        @Arg('id') id: number,
-    ) : Promise<Post> { 
+        @Arg('id', () => Int) id: number,
+        @Ctx() { req }: MyContext
+    ) : Promise<boolean> { 
         try {
-            await Post.delete(id)
+            await Post.delete({ id, creatorId: req.session.userId})
+            console.log('deletou')
         } catch {
+            console.log('nao deletou')
             return false
         }
         return true

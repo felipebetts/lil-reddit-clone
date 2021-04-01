@@ -4,7 +4,7 @@ import { validateRegister } from './../utils/validateRegister';
 // import "reflect-metadata"
 import { User } from "../entities/User"
 import { MyContext } from "../types"
-import { Arg, Ctx, Field, FieldResolver Mutation, ObjectType, Query, Resolver, Root } from 'type-graphql'
+import { Arg, Ctx, Field, FieldResolver, Mutation, ObjectType, Query, Resolver, Root } from 'type-graphql'
 import argon2 from "argon2"
 import { COOKIE_NAME } from "../constants"
 import { UsernamePasswordInput } from "./UsernamePasswordInput"
