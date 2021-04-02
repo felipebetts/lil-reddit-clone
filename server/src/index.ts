@@ -1,3 +1,4 @@
+import { createUpdootLoader } from './utils/createUpdootLoader';
 import "reflect-metadata"
 import { PostResolver } from './resolvers/post';
 import { HelloResolver } from './resolvers/hello';
@@ -14,8 +15,9 @@ import cors from 'cors'
 import { createConnection } from 'typeorm'
 import { Post } from "./entities/Post";
 import { User } from "./entities/User";
-import path from 'path'
 import { Updoot } from "./entities/Updoot";
+import path from 'path'
+import { createUserLoader } from "./utils/createUserLoader";
 
 // import { User } from "./entities/User";
 // await orm.em.nativeDelete(User, { username: "beto" }) // deleta todos os usuátios do banco de dados
@@ -74,7 +76,13 @@ const main = async () => {
             resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
-        context: ({ req, res }) => ({ req, res, redis }) // context é um objeto que estará disponível para todos os resolvers
+        context: ({ req, res }) => ({
+            req,
+            res,
+            redis,
+            userLoader: createUserLoader(),
+            updootLoader: createUpdootLoader() 
+        }) // context é um objeto que estará disponível para todos os resolvers
     })
 
     // o apollo pode aplicar o cors para a rota em que ele está configurado 

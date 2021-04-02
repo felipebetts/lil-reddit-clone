@@ -17,7 +17,7 @@ const Index = () => {
   })
 
 
-  const [{ data, fetching }] = usePostsQuery({ // em data serão armazenados todos os posts do site
+  const [{ data, error, fetching }] = usePostsQuery({ // em data serão armazenados todos os posts do site
     variables,
   })
 
@@ -25,7 +25,10 @@ const Index = () => {
   if(!fetching && !data) {
     // se nós nao estamos baixando os dados(fetching) e também não temos os dados ainda, então ocorreu algum erro
     return (
+      <Box>
       	<Box>Erro: Busca de posts não foi possível</Box>
+        <Box>{error?.message}</Box>
+      </Box>
     )
   }
 

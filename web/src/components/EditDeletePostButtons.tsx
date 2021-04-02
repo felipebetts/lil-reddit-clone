@@ -7,9 +7,10 @@ import { useDeletePostMutation, useMeQuery } from "../generated/graphql"
 interface EditDeletePostButtonsProps {
     id: number
     creatorId: number
+    ml?: string
 }
 
-const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({ id, creatorId }) => {
+const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({ id, creatorId, ml }) => {
 
     const [{ }, deletePost] = useDeletePostMutation()
 
@@ -21,7 +22,7 @@ const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({ id, creat
     }
 
     return (
-        <>
+        <Box ml={ml}>
             <NextLink href="/post/edit/[id]" as={`/post/edit/${id}`}>
                 <IconButton
                     as={Link}
@@ -37,7 +38,7 @@ const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({ id, creat
                     deletePost({ id })
                 }}
             />
-        </>
+        </Box>
     )
 }
 

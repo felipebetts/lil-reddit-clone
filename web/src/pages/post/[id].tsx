@@ -34,7 +34,7 @@ const Post = ({}) => {
             <Heading mb={4}>{data.post.title}</Heading>
             {data?.post?.text}
             <Flex align="flex-end" mt={5}>
-                <EditDeletePostButtons id={data.post.id} creatorId={data.post.creator.id} />
+                <EditDeletePostButtons id={data.post.id} creatorId={data.post.creator.id} ml="auto" />
             </Flex>
         </Layout>
     );
