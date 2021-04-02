@@ -1,12 +1,12 @@
 import { withUrqlClient } from "next-urql"
 import { createUrqlClient } from "../utils/createUrqlClient"
-import { useDeletePostMutation, usePostsQuery } from '../generated/graphql'
+import {  useMeQuery, usePostsQuery } from '../generated/graphql'
 import { Layout } from "../components/Layout"
 import NextLink from 'next/link'
 import React, { useState } from "react"
-import { Link, Stack, Box, Heading, Text, Flex, Button, IconButton } from "@chakra-ui/react"
+import { Link, Stack, Box, Heading, Text, Flex, Button } from "@chakra-ui/react"
 import { UpdootSection } from "../components/UpdootSection"
-import { DeleteIcon } from "@chakra-ui/icons"
+import EditDeletePostButtons from "../components/EditDeletePostButtons"
 
 
 const Index = () => {
@@ -16,11 +16,11 @@ const Index = () => {
     cursor: null as null | string,
   })
 
+
   const [{ data, fetching }] = usePostsQuery({ // em data serão armazenados todos os posts do site
     variables,
   })
 
-  const [{}, deletePost] = useDeletePostMutation()
 
   if(!fetching && !data) {
     // se nós nao estamos baixando os dados(fetching) e também não temos os dados ainda, então ocorreu algum erro
@@ -50,15 +50,12 @@ const Index = () => {
                   <Text fontSize={'0.9rem'}>por {post.creator.username}</Text>
                   <Flex>
                     <Text mt={4}>{post.textSnippet}</Text>
-                    <IconButton 
-                      aria-label="deletar post" 
-                      icon={<DeleteIcon />}
-                      ml="auto"
-                      colorScheme="red"
-                      onClick={() => {
-                        deletePost({ id: post.id })
-                      }}
-                    />
+                      <Box ml="auto">
+                        <EditDeletePostButtons 
+                          id={post.id}
+                          creatorId={post.creator.id}
+                        />
+                      </Box>
                   </Flex>
                 </Flex>
               </Flex>

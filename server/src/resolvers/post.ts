@@ -175,19 +175,24 @@ export class PostResolver {
 
 
     // A mutation abaixo atualiza um post e o insere na tabela do banco de dados
-    @Mutation(() => Post, { nullable: true }) 
+    @Mutation(() => Post, { nullable: true })
+    @UseMiddleware(isAuth)
     async updatePost(
-        @Arg('id') id: number,
+        @Arg('id', () => Int) id: number,
         @Arg('title', () => String, { nullable: true }) title: string,
+        @Arg('text', () => String, { nullable: true }) text: string,
+        @Ctx() { req }: MyContext,
     ) : Promise<Post> { 
-        const post = await Post.findOne(id)
-        if (!post) {
-            return null
-        }
-        if (typeof title !== 'undefined') {
-            await Post.update({ id }, { title })
-        }
-        return post
+
+        const result = await getConnection()
+            .createQueryBuilder()
+            .update(Post)
+            .set({ title, text })
+            .where( 'id = :id and "creatorId" = :creatorId' , { id, creatorId: req.session.userId })
+            .returning("*")
+            .execute()
+
+        return result.raw[0]
     }
 
 
@@ -198,6 +203,19 @@ export class PostResolver {
         @Arg('id', () => Int) id: number,
         @Ctx() { req }: MyContext
     ) : Promise<boolean> { 
+
+        const post = await Post.findOne(id)
+
+        if(!post) {
+            return false
+        }
+
+        if (post.creatorId !== req.session.userId) {
+            // se o dono do post nao for o usuario atual, 
+            // nao podemos permitir que ele delete o post
+            throw new Error('Esse post é de outro usuário e não pode ser deletado por você')
+        }
+
         try {
             await Post.delete({ id, creatorId: req.session.userId})
             console.log('deletou')

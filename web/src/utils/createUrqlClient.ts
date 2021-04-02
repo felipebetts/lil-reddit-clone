@@ -119,9 +119,8 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
 
   let cookie = ''
   if (isServer()) {
-    cookie = ctx.req.headers.cookie
+    cookie = ctx?.req?.headers?.cookie
   }
-  console.log('cookie: ', cookie)
 
   return {
   url: "http://localhost:4000/graphql",
