@@ -1,5 +1,6 @@
-import { createUpdootLoader } from './utils/createUpdootLoader';
 import "reflect-metadata"
+import "dotenv-safe/config"
+import { createUpdootLoader } from './utils/createUpdootLoader';
 import { PostResolver } from './resolvers/post';
 import { HelloResolver } from './resolvers/hello';
 import { UserResolver } from "./resolvers/user";
@@ -26,11 +27,12 @@ import { createUserLoader } from "./utils/createUserLoader";
 const main = async () => {
     const conn = await createConnection({
         type: 'postgres',
-        database: 'lireddit2',
-        username: 'postgres',
-        password: '1237Trinta',
+        // database: 'lireddit2',
+        // username: 'postgres',
+        // password: '1237Trinta',
+        url: process.env.DATABASE_URL,
         logging: true,
-        synchronize: true,
+        // synchronize: true, só deve ser true quando em desenvolvimento
         migrations: [path.join(__dirname, './migrations/*')],
         entities: [Post, User, Updoot]
     })
@@ -42,10 +44,12 @@ const main = async () => {
     const app = express()
 
     const RedisStore = connectRedis(session)
-    const redis = new Redis()
+    const redis = new Redis(process.env.REDIS_URL)
+
+    app.set("proxy", 1)
 
     app.use(cors({
-        origin: "http://localhost:3000",
+        origin: process.env.CORS_ORIGIN,
         credentials: true // quando true nao aceita origin como *
     }))
 
@@ -64,9 +68,10 @@ const main = async () => {
                 httpOnly: true, // boas práticas de seguranca. o cookie nao será acessível para o javascript do frontend
                 sameSite: "lax",  // csrf. buscar no google
                 secure: false //__prod__, // quando true o cookie só funcionará para dominios https
+                // domain: __prod__ ? ".meudominio.com" : undefined
             },
             saveUninitialized: false, // quando true irá salvar o cookie mesmo que não hajam dados para preenchê-lo(salva o cookie vazio)
-            secret: 'show de bola', 
+            secret: process.env.SESSION_SECRET, 
             resave: false,
         })
     )
@@ -92,7 +97,7 @@ const main = async () => {
         cors: false
     })
 
-    app.listen(4000, () => {
+    app.listen(parseInt(process.env.PORT), () => {
         console.log('servidor rodando em localhost:4000')
     })
 };
