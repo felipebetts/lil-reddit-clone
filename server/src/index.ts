@@ -46,7 +46,7 @@ const main = async () => {
     const RedisStore = connectRedis(session)
     const redis = new Redis(process.env.REDIS_URL)
 
-    app.set("proxy", 1)
+    app.set("trust proxy", 1)
 
     app.use(cors({
         origin: process.env.CORS_ORIGIN,
@@ -67,14 +67,16 @@ const main = async () => {
                 maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // nesse caso o tempo de vida do cookie será 10 anos
                 httpOnly: true, // boas práticas de seguranca. o cookie nao será acessível para o javascript do frontend
                 sameSite: "lax",  // csrf. buscar no google
-                secure: false //__prod__, // quando true o cookie só funcionará para dominios https
-                // domain: __prod__ ? ".meudominio.com" : undefined
+                secure: false, //__prod__, // quando true o cookie só funcionará para dominios https
+                domain: ".bliluminacao.com.br"
             },
             saveUninitialized: false, // quando true irá salvar o cookie mesmo que não hajam dados para preenchê-lo(salva o cookie vazio)
             secret: process.env.SESSION_SECRET, 
             resave: false,
         })
     )
+
+    console.log(__prod__)
 
     const apolloServer = new ApolloServer({
         schema: await buildSchema({
