@@ -1,6 +1,8 @@
 # lil-reddit-clone
 
-Este projeto é um pequeno clone da famosa plataforma Reddit, com os principais recursos do site: CRUD, fazer um post, curtir/comentar.
+Projeto concluído e no ar: https://lumiversal.com.br
+
+Este projeto é um pequeno clone da famosa plataforma Reddit, com os principais recursos do site: CRUD, fazer um post, curtir.
 
 Todo o projeto está sendo feito em TypeScript. O frontend é em Next.js utilizando também o ChakraUI. Já o backend é em Node.js utilizando express, TypeORM, PostgreSQL, GraphQL, Type-GraphQL, ApolloServer e urql.
 
