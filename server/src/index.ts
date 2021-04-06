@@ -67,8 +67,8 @@ const main = async () => {
                 maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // nesse caso o tempo de vida do cookie será 10 anos
                 httpOnly: true, // boas práticas de seguranca. o cookie nao será acessível para o javascript do frontend
                 sameSite: "lax",  // csrf. buscar no google
-                secure: false, //__prod__, // quando true o cookie só funcionará para dominios https
-                domain: ".bliluminacao.com.br"
+                secure: true, //__prod__, // quando true o cookie só funcionará para dominios https
+                domain: ".lumiversal.com.br"
             },
             saveUninitialized: false, // quando true irá salvar o cookie mesmo que não hajam dados para preenchê-lo(salva o cookie vazio)
             secret: process.env.SESSION_SECRET, 
